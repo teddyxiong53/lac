@@ -60,6 +60,13 @@ make install
 * 所有的宏都用大写。
 * 尽量不用宏展开进行函数和数据结构的实现。这样会不便于调试和阅读。
 
+```
+tinyparam
+	接口为tp_xx这个格式。tp是tinyparam的缩写。
+```
+
+
+
 # 目录
 
 ```
@@ -101,4 +108,28 @@ https://github.com/VigilantBag/bluealsa
 # 先写tinyparam
 
 这个比较独立，也比较简单。所以从这个先写。
+
+这个的设计就是：
+
+```
+key是这样的风格：
+	system.audio.volume
+value：
+	所有的value都是字符串。
+	如果bool语义，就用"true"/"false"
+	数字的，就用"12.0"。
+	多个数字的，这样"1.0, 2.0"。
+	数组的都这样："[1,2]"
+	只返回字符串的值，具体解释由上层来做。
+	
+对应的json文件内容是这样：
+{
+	"system": {
+		"aduio": {
+			"volume": "50.0"
+		}
+	}
+}
+每一个点号，对应object的嵌套一层。
+```
 
