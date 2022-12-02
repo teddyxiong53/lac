@@ -9,6 +9,7 @@ int main(int argc, char const *argv[])
         myloge("open json fail");
         return -1;
     }
+    mylogd("test param read");
     char *ret  = tp_get(handle, "system.audio.volume");
     mylogd("ret:%s", ret);
     ret = tp_get(handle, "a");
@@ -17,6 +18,12 @@ int main(int argc, char const *argv[])
     mylogd("aa.a:%s", ret);
     ret = tp_get(handle, "aa.b");
     mylogd("aa.b:%s", ret);
+
+    mylogd("test param write");
+    tp_set(handle, "system.audio.volume", "100");
+    mylogd("read volum after write to 100");
+    ret = tp_get(handle, "system.audio.volume");
+    mylogd("new volume:%s", ret);
     tp_close(handle);
     return 0;
 }

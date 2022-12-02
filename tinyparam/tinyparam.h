@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include "cJSON.h"
 
+
 typedef struct tp_handle {
     FILE *fp;//打开的json文件对应的fp指针
     pthread_mutex_t lock;//防止同时写入的情况出现。

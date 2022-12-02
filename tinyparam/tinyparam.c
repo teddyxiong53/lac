@@ -19,7 +19,7 @@ tp_handle_t * tp_open(char *file)
         myloge("malloc fail");
         goto fail;
     }
-    handle->fp = fopen(file, "rw");
+    handle->fp = fopen(file, "r+");
     if (!handle->fp) {
         myloge("open file %s fail", file);
         goto fail;
@@ -107,9 +107,9 @@ char* tp_get(tp_handle_t *h, char *key)
     while (cur->type == cJSON_Object) {
         // 如果当前json还是obj，继续取.后面的字符串。
         ptr = strtok_r(NULL, ".", &p);
-        mylogd("try to get %s.%s", cur->string, ptr);
+        // mylogd("try to get %s.%s", cur->string, ptr);
         cur = cJSON_GetObjectItem(cur, ptr);
-        mylogd("cur json ptr:%p", cur);
+        // mylogd("cur json ptr:%p", cur);
         if (!cur) {
             myloge("can not get %s ", ptr);
             goto fail;
@@ -120,4 +120,72 @@ char* tp_get(tp_handle_t *h, char *key)
 fail:
     pthread_mutex_unlock(&h->lock);
     return NULL;
+}
+
+/*
+    写入的时候，需要先把valuestring对应的内存free掉。
+    然后strdup把value拷贝过去。因为value的长度是在变化的。
+    思路：
+        1.先还是定位到对应的节点。这个逻辑跟get完全是一样的。
+*/
+int tp_set(tp_handle_t *h, char *key, char *value)
+{
+    if (!h) {
+        myloge("handle is null");
+        return -1;
+    }
+    if (!h->root) {
+        myloge("cjson is empty");
+        return -1;
+    }
+    char str[256] = {0};
+    strncpy(str, key, 255);
+    char* ptr = NULL;
+    char* p = NULL;
+    cJSON *tmp = NULL;
+    cJSON *cur = h->root;
+    pthread_mutex_lock(&h->lock);
+    ptr = strtok_r(str, ".", &p);
+    if (!ptr) {
+        pthread_mutex_unlock(&h->lock);
+        return -1;
+    }
+    cur = cJSON_GetObjectItem(h->root, ptr);//cur->string == system
+    while (cur->type == cJSON_Object) {
+        // 如果当前json还是obj，继续取.后面的字符串。
+        ptr = strtok_r(NULL, ".", &p);
+        // mylogd("try to get %s.%s", cur->string, ptr);
+        cur = cJSON_GetObjectItem(cur, ptr);
+        // mylogd("cur json ptr:%p", cur);
+        if (!cur) {
+            myloge("can not get %s ", ptr);
+            goto fail;
+        }
+    }
+    // write to json node
+    free(cur->valuestring);
+    cur->valuestring = strdup(value);
+    if (!cur->valuestring) {
+        myloge("malloc fail");
+        goto fail;
+    }
+    // write to file
+    // 先把json打印到buf，然后进行写入。
+    char *buf = cJSON_Print(h->root);
+    //需要先清空文件内容。
+    ftruncate(fileno(h->fp), 0);
+    rewind(h->fp);
+    int len = fwrite(buf, 1, strlen(buf), h->fp);
+    if (len != strlen(buf)) {
+        myloge("write to content fail, len:%d, strlen:%d", len, strlen(buf));
+        perror("write file fail");
+        free(buf);
+        goto fail;
+    }
+    free(buf);
+    pthread_mutex_unlock(&h->lock);
+    return 0;
+fail:
+    pthread_mutex_unlock(&h->lock);
+    return -1;
 }
