@@ -21,8 +21,12 @@ Makefile
 libtool
 test-tinyev
 test-tinyparam
+test-libev
 stamp-h1
 config.h
+.vscode/
+*.lai
+**/.libs
 
 # Prerequisites
 *.d

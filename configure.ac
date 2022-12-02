@@ -33,7 +33,7 @@ AC_CONFIG_FILES([
 	Makefile
 	cjson/Makefile
 	tinyipc/Makefile
-    tinyev/Makefile
+    libev/Makefile
 	tinyparam/Makefile
     demo/Makefile
 	test/Makefile

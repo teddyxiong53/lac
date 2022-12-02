@@ -1,12 +1,15 @@
 
-bin_PROGRAMS = test-tinyev  test-tinyparam
+bin_PROGRAMS = test-libev  test-tinyparam
 
 
 AM_CFLAGS = \
 	-I$(top_srcdir)/cjson \
-    -I$(top_srcdir)/tinyev \
+    -I$(top_srcdir)/libev \
     -I$(top_srcdir)/tinyparam \
     -I$(top_srcdir)/tinyipc \
 	-I$(top_srcdir)/include
 
-LDADD = -L$(top_srcdir)/cjson -L$(top_srcdir)/tinyparam -ltinyparam -lcjson -lpthread -lm
+LDADD = -L$(top_srcdir)/cjson -L$(top_srcdir)/tinyparam \
+	-L$(top_srcdir)/libev \
+	-ltinyparam \
+	-lev -lcjson -lpthread -lm
