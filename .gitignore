@@ -13,6 +13,16 @@ ltmain.sh
 m4/
 missing
 test-driver
+config.h.in~
+config.log
+config.status
+Makefile
+.deps
+libtool
+test-tinyev
+test-tinyparam
+stamp-h1
+config.h
 
 # Prerequisites
 *.d

@@ -34,7 +34,8 @@ AC_CONFIG_FILES([
 	cjson/Makefile
 	tinyipc/Makefile
     tinyev/Makefile
-	tinyparams/Makefile
+	tinyparam/Makefile
     demo/Makefile
-	test/Makefile])
+	test/Makefile
+	])
 AC_OUTPUT
