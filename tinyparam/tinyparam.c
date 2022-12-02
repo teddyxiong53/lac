@@ -97,22 +97,27 @@ char* tp_get(tp_handle_t *h, char *key)
     char* p = NULL;
     cJSON *tmp = NULL;
     cJSON *cur = h->root;
-
+    pthread_mutex_lock(&h->lock);
     ptr = strtok_r(str, ".", &p);
     if (!ptr) {
+        pthread_mutex_unlock(&h->lock);
         return NULL;
     }
     cur = cJSON_GetObjectItem(h->root, ptr);//cur->string == system
     while (cur->type == cJSON_Object) {
         // 如果当前json还是obj，继续取.后面的字符串。
         ptr = strtok_r(NULL, ".", &p);
-        cur = cJSON_GetObjectItem(cur, ptr);//tmp->string ==
+        mylogd("try to get %s.%s", cur->string, ptr);
+        cur = cJSON_GetObjectItem(cur, ptr);
+        mylogd("cur json ptr:%p", cur);
         if (!cur) {
-            myloge("can not get %s from %s", ptr, cur->string);
+            myloge("can not get %s ", ptr);
             goto fail;
         }
     }
+    pthread_mutex_unlock(&h->lock);
     return cur->valuestring;
 fail:
+    pthread_mutex_unlock(&h->lock);
     return NULL;
 }

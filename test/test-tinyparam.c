@@ -15,6 +15,8 @@ int main(int argc, char const *argv[])
     mylogd("a:%s", ret);
     ret = tp_get(handle, "aa.a");
     mylogd("aa.a:%s", ret);
+    ret = tp_get(handle, "aa.b");
+    mylogd("aa.b:%s", ret);
     tp_close(handle);
     return 0;
 }
