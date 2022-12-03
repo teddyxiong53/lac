@@ -375,6 +375,7 @@ static void jrpc_procedure_destroy(struct jrpc_procedure *procedure)
 }
 int jrpc_server_destroy(struct jrpc_server *server)
 {
+    //server指针本身这里不管，由上层来决定怎么处理。
     int i;
     for (i=0; i<server->procedure_count; i++) {
         jrpc_procedure_destroy(&(server->procedures[i]));
