@@ -11,7 +11,7 @@ void * send_cmd_proc(void *arg)
 {
     while (1) {
         sleep(2);
-        jrpc_client_send_cmd_only_name(&my_client, "sayHello");
+        // jrpc_client_send_cmd_only_name(&my_client, "sayHello");
     }
 }
 int main(int argc, char const *argv[])

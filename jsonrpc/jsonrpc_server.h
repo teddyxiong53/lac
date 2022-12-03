@@ -10,6 +10,8 @@
 #define JRPC_INVALID_PARAMS -32603
 #define JRPC_INTERNAL_ERROR -32693
 
+// 最多允许多少个client连接上来。
+#define CLIENT_NUM 3
 
 typedef struct jrpc_context {
     void *data;
@@ -23,14 +25,6 @@ struct jrpc_procedure {
     jrpc_function function;
     void *data;
 };
-struct jrpc_server {
-    unsigned short port_number;
-    struct ev_loop *loop;
-    ev_io listen_watcher;
-    int procedure_count;
-    struct jrpc_procedure *procedures;
-
-};
 
 struct jrpc_connection {
     struct ev_io io;
@@ -41,10 +35,32 @@ struct jrpc_connection {
 
 };
 
+struct jrpc_server {
+    unsigned short port_number;
+    struct ev_loop *loop;
+    ev_io listen_watcher;
+    int procedure_count;
+    struct jrpc_procedure *procedures;
+    struct jrpc_connection *conns[CLIENT_NUM];
+    int conn_count;
+};
+
+
+
 int jrpc_server_init(struct jrpc_server *server, int port);
 int jrpc_server_init_with_ev_loop(struct jrpc_server *server, int port, struct ev_loop *loop);
 int jrpc_server_register_procedure(struct jrpc_server *server,
     jrpc_function func, char *name, void *data);
+
+/**
+ * @brief 给所有连接的client发送广播消息。
+ *
+ * @param server
+ * @param key "system.player.status"这个的字符串
+ * @param value "playing" 这样的字符串。
+ * @return int
+ */
+int jrpc_server_broadcast(struct jrpc_server *server, char *key, char *value);
 
 void jrpc_server_run(struct jrpc_server *server);
 void jrpc_server_stop(struct jrpc_server *server);

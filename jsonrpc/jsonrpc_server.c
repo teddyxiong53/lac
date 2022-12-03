@@ -14,6 +14,15 @@ static void close_connection(struct ev_loop *loop, ev_io *w)
     mylogd("close conection");
     ev_io_stop(loop ,w);
     struct jrpc_connection *conn = (struct jrpc_connection *)w;
+    struct jrpc_server *server = w->data;
+    // 从server里找到这个conn。把对应的位置清空。
+    int i;
+    for (i=0; i<CLIENT_NUM; i++) {
+        if (conn == server->conns[i]) {
+            server->conns[i] = NULL;
+            server->conn_count --;
+        }
+    }
     close(conn->fd);
     free(conn->buffer);
     free(conn);
@@ -234,6 +243,7 @@ static void accept_cb(struct ev_loop *loop, ev_io *w, int revents)
 {
     struct jrpc_connection *connection_watcher;
     connection_watcher = malloc(sizeof(*connection_watcher));
+    struct jrpc_server *server = (struct jrpc_server *)w->data;
     socklen_t size = 0;
     struct sockaddr_in clientaddr;
     connection_watcher->fd = accept(w->fd, (struct sockaddr *)&clientaddr, &size);
@@ -253,8 +263,29 @@ static void accept_cb(struct ev_loop *loop, ev_io *w, int revents)
     memset(connection_watcher->buffer, 0, 1500);
     connection_watcher->pos = 0;
     ev_io_start(loop, &connection_watcher->io);
+    // 把connection加入到server中进行管理
+    // 方便在需要的时候，遍历发送广播给所有的client
+    int i;
+    for (i=0; i<CLIENT_NUM; i++) {
+        if (server->conns[i] == NULL) {
+            server->conns[i] = connection_watcher;
+            server->conn_count ++;
+            break;
+        }
+    }
+    if (server->conn_count > CLIENT_NUM) {
+        //说明没有找到空闲的了。
+        //也关闭。
+        mylogd("all conns is used now");
+        goto fail;
+    }
+    mylogd("accept ok, fd:%d", connection_watcher->fd);
     return;
 fail:
+    if (connection_watcher->fd > 0) {
+        mylogd("close accepted fd");
+        close(connection_watcher->fd);
+    }
     if (connection_watcher) {
         free(connection_watcher);
     }
@@ -309,6 +340,11 @@ int jrpc_server_init_with_ev_loop(struct jrpc_server *server, int port, struct e
     memset(server, 0, sizeof(*server));
     server->loop = loop;
     server->port_number = port;
+    server->conn_count = 0;
+    int i;
+    for (i=0; i<CLIENT_NUM; i++) {
+        server->conns[i] = NULL;
+    }
 
     return __jrpc_server_start(server);
 }
@@ -377,4 +413,34 @@ int jrpc_server_destroy(struct jrpc_server *server)
         jrpc_procedure_destroy(&(server->procedures[i]));
     }
     free(server->procedures);
+}
+
+
+
+
+int jrpc_server_broadcast(struct jrpc_server *server, char *key, char *value)
+{
+    int i;
+
+    // 把namespace和value转换成一个cjson对象。
+    // 然后打印成json字符串
+    // 解析过程还是跟tp_get里的类似。
+    cJSON *root = cJSON_CreateObject();
+    cJSON *method_json = cJSON_CreateString("method");
+    cJSON_AddItemToObject(root, "method", method_json);
+    cJSON *params_json = cJSON_CreateObject();
+    cJSON *key_json = cJSON_CreateString(value);
+    cJSON_AddItemToObject(params_json, key, key_json);
+    cJSON_AddItemToObject(root, "params", params_json);
+    char *str = cJSON_Print(root);
+    mylogd("broadcast string:%s", str);
+    cJSON_Delete(root);
+    for (i=0; i<CLIENT_NUM; i++) {
+        if (server->conns[i] != NULL) {
+            mylogd("send to client[%d]", i);
+            send(server->conns[i]->fd, str, strlen(str), 0);
+        }
+    }
+    free(str);
+    return 0;
 }
