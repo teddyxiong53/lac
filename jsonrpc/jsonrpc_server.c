@@ -49,7 +49,7 @@ static int send_result(struct jrpc_connection *conn, cJSON *result, cJSON *id)
     int ret = 0;
     cJSON *result_root = cJSON_CreateObject();
     if (result) {
-        cJSON_AddItemToObject(result_root, "root", result);
+        cJSON_AddItemToObject(result_root, "result", result);
     }
     cJSON_AddItemToObject(result_root, "id", id);
     char *str = cJSON_Print(result_root);
@@ -103,14 +103,21 @@ static int eval_request(struct jrcp_server *server, struct jrpc_connection *conn
         goto fail;
     }
     // get params
+    // params也是可选的。
     params = cJSON_GetObjectItem(root, "params");
-    if (!((params != NULL) && (
-        (params->type == cJSON_Array )
-        || (params->type == cJSON_Object)
-    ))) {
-        myloge("params is not right");
+    if (params == NULL) {
+        //这个是正常的。
+    } else if ((
+        (params != NULL) &&
+        ((params->type == cJSON_Array ) || (params->type == cJSON_Object))
+    )) {
+       //这个也是正常的。
+    } else {
+        //这里才是不正常的。
+        mylogd("params is not right");
         goto fail;
     }
+
     // get id
     id = cJSON_GetObjectItem(root, "id");
     // id可以没有，如果有的话，那么必须是string或number类型。
