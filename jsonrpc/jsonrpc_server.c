@@ -271,7 +271,7 @@ static int __jrpc_server_start(struct jrpc_server *server)
     sockaddr.sin_family = AF_INET;
     sockaddr.sin_port = htons(server->port_number);
     sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    mylogd("");
+
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
         myloge("create socket fail");
@@ -283,24 +283,24 @@ static int __jrpc_server_start(struct jrpc_server *server)
         myloge("setsockopt fail");
         goto fail;
     }
-    mylogd("");
+
     ret = bind(sockfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret < 0) {
         myloge("bind fail");
         goto fail;
     }
-    mylogd("");
+
     ret = listen(sockfd, 5);
     if (ret < 0) {
         myloge("listen fail");
         goto fail;
     }
-    mylogd("");
+
     ev_io_init(&server->listen_watcher, accept_cb, sockfd, EV_READ);
     server->listen_watcher.data = server;
     mylogd("server->loop:%p", server->loop);
     ev_io_start(server->loop, &server->listen_watcher);
-    mylogd("");
+
     return 0;
 fail:
     if (sockfd > 0) {
@@ -313,7 +313,7 @@ int jrpc_server_init_with_ev_loop(struct jrpc_server *server, int port, struct e
     memset(server, 0, sizeof(*server));
     server->loop = loop;
     server->port_number = port;
-    mylogd("");
+
     return __jrpc_server_start(server);
 }
 
@@ -359,4 +359,25 @@ void jrpc_server_run(struct jrpc_server *server)
 void jrpc_server_stop(struct jrpc_server *server)
 {
     ev_break(server->loop, EVBREAK_ALL);
+}
+
+static void jrpc_procedure_destroy(struct jrpc_procedure *procedure)
+{
+    if (procedure->name) {
+        free(procedure->name);
+        procedure->name = NULL;
+    }
+    if (procedure->data) {
+        free(procedure->data);
+        procedure->data = NULL;
+    }
+
+}
+int jrpc_server_destroy(struct jrpc_server *server)
+{
+    int i;
+    for (i=0; i<server->procedure_count; i++) {
+        jrpc_procedure_destroy(&(server->procedures[i]));
+    }
+    free(server->procedures);
 }

@@ -49,5 +49,6 @@ int jrpc_server_register_procedure(struct jrpc_server *server,
 void jrpc_server_run(struct jrpc_server *server);
 void jrpc_server_stop(struct jrpc_server *server);
 
+int jrpc_server_destroy(struct jrpc_server *server);
 
 #endif
