@@ -159,7 +159,8 @@ static void connection_cb(struct ev_loop *loop, ev_io *w, int revents)
     int fd = conn->fd;
     mylogd("pos:%d", conn->pos);
     if (conn->pos == (conn->buffer_size-1)) {
-        char *new_buffer = realloc(conn->buffer, conn->buffer_size*2);
+        //注意下面这里是*=，长度值就已经改了。
+        char *new_buffer = realloc(conn->buffer, conn->buffer_size *= 2);
         if (new_buffer == NULL) {
             myloge("malloc fail");
             return close_connection(loop, w);
@@ -183,20 +184,27 @@ static void connection_cb(struct ev_loop *loop, ev_io *w, int revents)
         cJSON *root = NULL;
         char *end_ptr = NULL;
         conn->pos += bytes_read;
+        //这里还是从buffer最开始解析。
         root = cJSON_Parse_Stream(conn->buffer, &end_ptr);
-
+        // mylogd("whole buffer:%s", conn->buffer);
+        // mylogd("buffer content len:%d", strlen(conn->buffer));
+        // mylogd("end_ptr:%p", end_ptr);
         if (root == NULL) {
             //说明解析出错了。
             //看一下有没有解析完所有的buffer，
             //如果没有，等待后面的数据。
             //否则就是真的出错了。
+            mylogd("end_ptr:%p, buffer:%p, pos:%d", end_ptr, conn->buffer, conn->pos);
             if (end_ptr != (conn->buffer + conn->pos)) {
                 mylogd("invalid json received");
                 //向client发送错误提示。
                 send_error(conn, JRPC_PARSE_ERROR,
                     strdup("Parse error, invalid json string"), NULL);
                 //需要关闭连接吗？罪不至死吧。（可能只是发错了数据而已，重新发送就好了嘛。
-
+                //不用断开连接。但是这个时候buffer里的内容不对，需要把buffer复位一下。
+                //否则后续都不能正常进行解析了。
+                memset(conn->buffer, 0, conn->buffer_size);
+                conn->pos = 0;
             }
         } else {
             //这个是正常的分支
@@ -213,6 +221,8 @@ static void connection_cb(struct ev_loop *loop, ev_io *w, int revents)
             }
             //把已经处理过的内容扔掉
             //这里为什么要+2？
+            //mylogd("strlen(end_ptr):%d", strlen(end_ptr));
+            //mylogd("end_ptr content:%s", end_ptr);
             memmove(conn->buffer, end_ptr, strlen(end_ptr)+2);
             conn->pos = strlen(end_ptr);
             memset(conn->buffer + conn->pos, 0, conn->buffer_size - conn->pos - 1);
