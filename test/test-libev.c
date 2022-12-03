@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <sys/unistd.h>
+#include "mylog.h"
 
 ev_io io_w;
 ev_timer timer_w;
@@ -32,6 +33,7 @@ void signal_action(struct ev_loop *main_loop, ev_signal *signal_w, int e)
 int main(int argc, char const *argv[])
 {
     struct ev_loop *main_loop = ev_default_loop(0);
+    mylogd("loop:%p", main_loop);
     ev_init(&io_w, io_action);
     ev_io_set(&io_w, STDIN_FILENO, EV_READ);
     ev_init(&timer_w, timer_action);

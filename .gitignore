@@ -23,10 +23,10 @@ test-tinyev
 test-tinyparam
 test-libev
 stamp-h1
-config.h
+./config.h
 .vscode/
-*.lai
-**/.libs
+**/**/*.lai
+**/.libs/*
 
 # Prerequisites
 *.d
