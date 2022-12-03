@@ -3,6 +3,7 @@
 
 #include "cJSON.h"
 #include "ev.h"
+#include <pthread.h>
 
 #define JSONRPC_DEFAULT_TIMEOUT 500 //500ms
 #define JSONRPC_DEFAULT_BUFFER_SIZE 8192

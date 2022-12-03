@@ -1,6 +1,6 @@
 
 bin_PROGRAMS = test-libev  test-tinyparam test-jsonrpc-server \
-	test-jsonrpc-client
+	test-jsonrpc-client unix-echo-client unix-echo-server
 
 
 AM_CFLAGS = \

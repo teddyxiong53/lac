@@ -16,13 +16,25 @@ void * send_cmd_proc(void *arg)
 }
 int main(int argc, char const *argv[])
 {
-    jrpc_client_init(&my_client, "127.0.0.1", 1234);
-    jrpc_client_connect_server(&my_client);
+    int ret = 0;
+    ret = jrpc_client_init(&my_client, "127.0.0.1", 1234);
+    if (ret < 0) {
+        myloge("client init fail");
+        goto fail;
+    }
+    ret = jrpc_client_connect_server(&my_client);
+    if (ret < 0) {
+        myloge("connect to server fail");
+        goto fail;
+    }
     pthread_create(&tid, NULL, send_cmd_proc, NULL);
     mylogd("before run");
     jrpc_client_run(&my_client);
     mylogd("after run");
     jrpc_client_destroy(&my_client);
     return 0;
+fail:
+    jrpc_client_destroy(&my_client);
+    return ret;
 }
 

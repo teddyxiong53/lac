@@ -3,13 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "mylog.h"
-#include <arpa/inet.h>
-#include <fcntl.h>
 #include <netinet/in.h>
-#include <sys/eventfd.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include "mylog.h"
+
 
 static int setnonblock(int fd)
 {
@@ -44,7 +44,7 @@ fail:
     return -1;
 }
 
-static void process_recv_msg(struct jrpc_client* client)
+static void process_recv_msg(struct jrpc_client *client)
 {
     // 从recv_buf里取出数据
     // 进行json解析。
@@ -55,13 +55,26 @@ static void process_recv_msg(struct jrpc_client* client)
     mylogd("recv buf:%s", client->recv_buf);
     // 清空recv buf
     memset(client->recv_buf, 0, strlen(client->recv_buf));
+
 }
-static void send_cb(struct ev_loop* loop, ev_io* w, int revents)
+static void send_cb(struct ev_loop *loop, ev_io *w, int revents)
 {
     mylogd("revents:0x%x", revents);
-    struct jrpc_client* client = (struct jrpc_client*)w->data;
+    struct jrpc_client *client = (struct jrpc_client *)w->data;
     int ret = 0;
-    if (revents | EV_READ) {
+    if (revents & EV_WRITE) {
+        mylogd("ready to write");
+        ret = send(client->sockfd, client->send_buf, strlen(client->send_buf), 0);
+        if (ret < 0) {
+            myloge("send fail");
+            return;
+        }
+        //一旦数据发送完了。停止关注可写事件。
+        //直到真的有数据需要外往写的时候。否则这个一直用一直被出发。
+        ev_io_stop(client->loop, &(client->watcher));
+        ev_io_set(&(client->watcher), client->sockfd, EV_READ);
+        ev_io_start(client->loop, &(client->watcher));
+    } else if (revents | EV_READ) {
         // 收到数据，有两种可能：
         // 1. 自己发送的命令的返回值。
         // 2. server主动发过来的东西。
@@ -77,7 +90,7 @@ static void send_cb(struct ev_loop* loop, ev_io* w, int revents)
         // 用cur_id来存放就好了。
         // 处理完之后，把cur_id赋值为-1
         // 如果收到的数据的id，跟cur_id不同，说明是server主动发过来的。
-        ret = recv(client->sockfd, client->recv_buf, client->recv_buf_size - 1, 0);
+        ret = recv(client->sockfd, client->recv_buf, client->recv_buf_size-1, 0);
         if (ret < 0) {
             //说明接收出错了
             myloge("recv fail");
@@ -97,23 +110,14 @@ static void send_cb(struct ev_loop* loop, ev_io* w, int revents)
     }
 }
 
-
-
-static void eventfd_cb(struct ev_loop* loop, ev_io* w, int revents)
+static void remote_cb(struct ev_loop *loop, ev_io *w, int revents)
 {
-    mylogd("eventfd trigger");
-    struct jrpc_client* client = (struct jrpc_client*)w->data;
-    mylogd("ready to write");
-    int ret;
-    ret = send(client->sockfd, client->send_buf, strlen(client->send_buf), 0);
-    if (ret < 0) {
-        myloge("send fail");
-        return;
-    }
-    //情况发送buf
-    memset(client->send_buf, 0, strlen(client->send_buf));
+    //到这里了。说明socket已经可写了。
+    //就是连接成功了的意思。
+    mylogd("remote connect ok");
+    struct jrpc_client *client = (struct jrpc_client *)w->data;
+    ev_io_stop(loop, &(client->remote_watcher));
 }
-
 int jrpc_client_connect_server(struct jrpc_client* client)
 {
     struct sockaddr_in serveraddr;
@@ -123,11 +127,11 @@ int jrpc_client_connect_server(struct jrpc_client* client)
         goto fail;
     }
     int ret = 0;
-    // ret = setnonblock(sockfd);
-    // if (ret < 0) {
-    //     myloge("set nonblock fail");
-    //     goto fail;
-    // }
+    ret = setnonblock(sockfd);
+    if (ret < 0) {
+        myloge("set nonblock fail");
+        goto fail;
+    }
     ret = inet_pton(AF_INET, client->server_ip, &serveraddr.sin_addr);
     if (ret < 0) {
         myloge("inet_pton fail");
@@ -137,17 +141,18 @@ int jrpc_client_connect_server(struct jrpc_client* client)
     serveraddr.sin_port = htons(client->port);
 
     //可以开始连接了。
-    ret = connect(sockfd, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+    ret = connect(sockfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
     if (ret < 0) {
-        myloge("connect fail");
-        //非阻塞方式，这里必然是fail的。所以要忽略这个错误。
+        // myloge("connect fail");
         perror("connect fail");
-        goto fail;
+        // goto fail;
     }
 
     client->sockfd = sockfd;
     mylogd("sockfd:%d", client->sockfd);
-
+    ev_io_init(&(client->remote_watcher), remote_cb, client->sockfd, EV_WRITE);
+    client->remote_watcher.data = client;
+    ev_io_start(client->loop, &(client->remote_watcher));
     // 默认只监听EV_READ。需要发送的时候，才监听EV_WRITE。
     ev_io_init(&(client->watcher), send_cb, client->sockfd, EV_READ);
     //需要把这个数据保存，这样才能在回调函数里使用client里的东西。
@@ -178,17 +183,28 @@ void jrpc_client_destroy(struct jrpc_client* client)
         client->recv_buf = NULL;
     }
 }
-void jrpc_client_run(struct jrpc_client* client)
+void jrpc_client_run(struct jrpc_client *client)
 {
     ev_run(client->loop, 0);
 }
 
-void jrpc_client_stop(struct jrpc_client* client)
+
+void jrpc_client_stop(struct jrpc_client *client)
 {
     ev_break(client->loop, EVBREAK_ALL);
 }
 
-
+/*
+    触发发送行为。
+    通过关注EV_WRITE事件来触发。
+*/
+void send_trigger(struct jrpc_client *client)
+{
+    mylogd("");
+    ev_io_stop(client->loop, &(client->watcher));
+    ev_io_set( &(client->watcher), client->sockfd, EV_READ|EV_WRITE);
+    ev_io_start(client->loop,  &(client->watcher));
+}
 /*
     提供什么样的对外接口，才能使用更加简单呢？
     是不是可以对cmd进行一些抽象和封装呢？
@@ -200,20 +216,16 @@ void jrpc_client_stop(struct jrpc_client* client)
     让用户自己决定选择哪个。
     cmd的cjson需要用户自己销毁。
 */
-int jrpc_client_send_cmd(struct jrpc_client* client, cJSON* cmd)
+int jrpc_client_send_cmd(struct jrpc_client *client, cJSON *cmd)
 {
     mylogd("");
-    int ret = -1;
     //把cmd print成json字符串，拷贝给send_buf。
-    char* str = cJSON_Print(cmd);
+    char *str = cJSON_Print(cmd);
     mylogd("send json:%s", str);
-    //直接这里进行发送。
-    ret = send(client->sockfd, str, strlen(str), 0);
-    free(str); //必须马上free掉。
-    if (ret < 0) {
-        myloge("send fail");
-        return -1;
-    }
+    strcpy(client->send_buf, str);
+    free(str);//必须马上free掉。
+    //
+    send_trigger(client);
     return 0;
 }
 int get_unique_id()
@@ -231,14 +243,14 @@ int get_unique_id()
     这个函数内部构造一下cJSON，然后调用jrpc_client_send_cmd
     相当于一个简单的版本。
 */
-int jrpc_client_send_cmd_only_name(struct jrpc_client* client, char* cmd)
+int jrpc_client_send_cmd_only_name(struct jrpc_client *client, char *cmd)
 {
     mylogd("");
-    cJSON* root = cJSON_CreateObject();
-    cJSON* method_json = cJSON_CreateString(cmd);
+    cJSON *root = cJSON_CreateObject();
+    cJSON *method_json = cJSON_CreateString(cmd);
     cJSON_AddItemToObject(root, "method", method_json);
     mylogd("");
-    cJSON* id_json = cJSON_CreateNumber(get_unique_id());
+    cJSON *id_json = cJSON_CreateNumber(get_unique_id());
     cJSON_AddItemToObject(root, "id", id_json);
     mylogd("");
     jrpc_client_send_cmd(client, root);
@@ -247,3 +259,4 @@ int jrpc_client_send_cmd_only_name(struct jrpc_client* client, char* cmd)
     cJSON_Delete(root);
     return 0;
 }
+

@@ -253,10 +253,6 @@ static void accept_cb(struct ev_loop *loop, ev_io *w, int revents)
     memset(connection_watcher->buffer, 0, 1500);
     connection_watcher->pos = 0;
     ev_io_start(loop, &connection_watcher->io);
-    //TODO 这里是不是有点问题，这个分配的内存，没有被谁记录管理起来。
-    //那断开连接的时候，谁来负责释放这个内存呢？
-    //我觉得应该在server结构体里记录所有的connection指针。
-    //这里铁定是有内存泄漏的。
     return;
 fail:
     if (connection_watcher) {
