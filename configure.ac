@@ -38,6 +38,7 @@ AC_CONFIG_FILES([
 	jsonrpc/Makefile
 	tinyutils/Makefile
 	tinythpool/Makefile
+	event_handler/Makefile
     demo/Makefile
 	test/Makefile
 	])
