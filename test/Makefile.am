@@ -1,7 +1,9 @@
 
 bin_PROGRAMS = test-libev  test-tinyparam test-jsonrpc-server \
 	test-jsonrpc-client unix-echo-client unix-echo-server \
-	test-thpool
+	test-thpool test-libev-async \
+	test-libev-3-basic-event test-libev-child test-libev-stat \
+	test-libev-periodic test-libev-cleanup test-libev-prepare-check
 
 
 AM_CFLAGS = \

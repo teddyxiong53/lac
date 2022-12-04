@@ -7,7 +7,7 @@
 | tinyparam   | √        | 描述：实现参数的读取和保存。<br/>动机：Linux下参数解析方案太多了，没有一个标准。配置语法也都各有所不同。我懒得去分析理解这些不同的配置语法了。json不就是很好的配置文件用法吗？为什么不用呢？不想引入c++的不确定性。而cjson库用起来太繁琐，随便读写一个参数得写一大串代码。<br/>基本思路：用cjson做后端，提供4个接口，一个open，一个close，一个get，一个set。用点分字符串来表示对象的层级关系。所有的值都用字符串类型表示（把参数的解释权交给上层应用）<br/>* get接口：`char* tp_get(tp_handle_t *h, char *key)`<br/>举例：`tp_get(h, "system.audio.volume")`<br/> 表示获取系统的音量值。<br/>*  set接口：`int tp_set(tp_handle_t *h, char *key, char *value);`<br/>举例：`tp_set(h, "system.audio.volume", "50")`<br/>表示设置系统音量为50。设置后参数自动保存到json文件里。 |
 | jsonrpc     | √        | 描述：实现基于jsonrpc的进程通信机制。<br/>动机：dbus太难用了。基于二进制通信协议太反人类了。我只想日子好过一点。我爱json。让json来接管一切吧。jsonrpc在很多大型应用里（例如vscode）都得到广泛使用，简单实用。为什么不用？<br/>基本思路：纯粹用C语言实现，保证简单可靠，拒绝不确定性。jsonrpc默认是请求-响应模型的。但是我在进程间通信是需要server主动向client发消息的。所以我自己另外实现了一些非标准的部分，可以让server根据需要对所有的client进行广播。完美。 |
 | lvgl_layout | X        | 描述：对lvgl应用使用json进行描述布局。<br/>动机：lvgl写代码还是很繁琐。代码和界面分离是一个很自然的选择。这个是目前的初步想法，也许已经有更好的做法存在了也不一定。 |
-| tinythpool  | X        | 描述：一个简单的C语言线程池。<br/>动机：有些异步的操作需求。这个不难，之前做过。有时间整理优化一下。 |
+| tinythpool  | √        | 描述：一个简单的C语言线程池。<br/>动机：有些异步的操作需求。 |
 
 更多功能，慢慢补齐，争取形成一套完整的方案。就像openwrt里的ubus、lua web那一套机制。
 
