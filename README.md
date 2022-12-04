@@ -54,6 +54,48 @@ make install
 * 所有的宏都用大写。
 * 尽量不用宏展开进行函数和数据结构的实现。这样会不便于调试和阅读。
 
+# 函数命名语义
+
+总体来说，我的代码遵循这样的规则：
+
+```
+struct xx * xx_create()
+	create语义表示内部需要分配一个xx结构体。
+	逻辑上，跟 void xx_destroy(struct xx *x) 进行配对使用。
+int xx_init(struct xx *x)
+	init表示对一个已经存在的对象进行初始化，传递的参数x指针，可能是一个静态的变量。也可以是malloc的内存。
+	逻辑上没有配对的函数。
+	
+```
+
+有些从其他地方拿过来的代码不一定符合这个规则。
+
+如果有需要注意的地方，我会在头文件注释里进行说明。
+
+函数的错误处理：
+
+```
+我比较习惯linux kernel probe函数里的处理方式。
+因为C语言没有自带的异常处理机制。
+我一般是这样做的：
+int xx_init(struct xx *x) 
+{
+	if (err1) {
+		//log
+		goto err1;
+	}
+	if (err2) {
+		//log
+		goto err2;
+	}
+err2:
+	//
+err1:
+	//
+	return -1;
+}
+```
+
 
 
 

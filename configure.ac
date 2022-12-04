@@ -36,6 +36,8 @@ AC_CONFIG_FILES([
     libev/Makefile
 	tinyparam/Makefile
 	jsonrpc/Makefile
+	tinyutils/Makefile
+	tinythpool/Makefile
     demo/Makefile
 	test/Makefile
 	])
