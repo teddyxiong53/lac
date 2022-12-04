@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include "backtrace_print.h"
 
 struct ev_loop *loop;
 
@@ -92,7 +93,13 @@ static int invoke_procedure(struct jrpc_server *server, struct jrpc_connection *
             return send_error(conn, ctx.error_code, ctx.error_message, id);
         } else {
             //正常处理了
-            return send_result(conn, ret, id);
+            if (id != NULL) {
+                return send_result(conn, ret, id);
+            } else {
+                //这个是notification，不能回复。
+                return ret;
+            }
+
         }
     } else {
         //没有找到
@@ -132,11 +139,14 @@ static int eval_request(struct jrcp_server *server, struct jrpc_connection *conn
     // id可以没有，如果有的话，那么必须是string或number类型。
     if (id == NULL) {
         //这个是正常的。
+        //这个说明是通知。
     } else if ((
         (id != NULL) &&
         ((id->type == cJSON_String ) || (id->type == cJSON_Number))
     )) {
        //这个也是正常的。
+       //这个有id，说明是一个request。
+
     } else {
         //这里才是不正常的。
         mylogd("id is not right");
@@ -225,6 +235,7 @@ static void connection_cb(struct ev_loop *loop, ev_io *w, int revents)
             }
             mylogd("root->type:%d", root->type);
             //只有object类型才处理
+            //其实Array类型也可以处理。那就是批处理。我先不支持吧。
             if (root->type == cJSON_Object) {
                 eval_request(server, conn, root);
             }
@@ -246,12 +257,31 @@ static void accept_cb(struct ev_loop *loop, ev_io *w, int revents)
     struct jrpc_server *server = (struct jrpc_server *)w->data;
     socklen_t size = 0;
     struct sockaddr_in clientaddr;
+
+
     connection_watcher->fd = accept(w->fd, (struct sockaddr *)&clientaddr, &size);
     if (connection_watcher->fd < 0) {
         myloge("accept fail");
         goto fail;
     }
     mylogd("get connection ");
+    // 把connection加入到server中进行管理
+    // 方便在需要的时候，遍历发送广播给所有的client
+    int i;
+    for (i=0; i<CLIENT_NUM; i++) {
+        if (server->conns[i] == NULL) {
+            server->conns[i] = connection_watcher;
+            server->conn_count ++;
+            break;
+        }
+    }
+    mylogd("conn count:%d", server->conn_count);
+    if (i >= CLIENT_NUM) {
+        //说明没有找到空闲的了。
+        //也关闭。
+        mylogd("all conns is used now");
+        goto fail;
+    }
     ev_io_init(&connection_watcher->io, connection_cb, connection_watcher->fd,
         EV_READ);
     connection_watcher->io.data = w->data;
@@ -263,22 +293,7 @@ static void accept_cb(struct ev_loop *loop, ev_io *w, int revents)
     memset(connection_watcher->buffer, 0, 1500);
     connection_watcher->pos = 0;
     ev_io_start(loop, &connection_watcher->io);
-    // 把connection加入到server中进行管理
-    // 方便在需要的时候，遍历发送广播给所有的client
-    int i;
-    for (i=0; i<CLIENT_NUM; i++) {
-        if (server->conns[i] == NULL) {
-            server->conns[i] = connection_watcher;
-            server->conn_count ++;
-            break;
-        }
-    }
-    if (server->conn_count > CLIENT_NUM) {
-        //说明没有找到空闲的了。
-        //也关闭。
-        mylogd("all conns is used now");
-        goto fail;
-    }
+
     mylogd("accept ok, fd:%d", connection_watcher->fd);
     return;
 fail:
@@ -286,9 +301,11 @@ fail:
         mylogd("close accepted fd");
         close(connection_watcher->fd);
     }
+
     if (connection_watcher) {
         free(connection_watcher);
     }
+
 }
 static int __jrpc_server_start(struct jrpc_server *server)
 {
@@ -352,7 +369,6 @@ int jrpc_server_init_with_ev_loop(struct jrpc_server *server, int port, struct e
 int jrpc_server_init(struct jrpc_server *server, int port)
 {
     loop = ev_default_loop(0);
-    mylogd("loop:%p", loop);
     return jrpc_server_init_with_ev_loop(server, port, loop);
 }
 

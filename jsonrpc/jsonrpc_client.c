@@ -216,34 +216,48 @@ int jrpc_client_send_cmd(struct jrpc_client* client, cJSON* cmd)
     }
     return 0;
 }
-int get_unique_id()
+
+int jrpc_client_get_unique_id()
 {
-    mylogd("");
     static unsigned int id = 0;
     static pthread_mutex_t lock;
     pthread_mutex_lock(&lock);
     id++;
+    if (id < 0) {
+        id = 1;
+    }
     pthread_mutex_unlock(&lock);
-    mylogd("");
     return id;
 }
+
 /*
-    这个函数内部构造一下cJSON，然后调用jrpc_client_send_cmd
-    相当于一个简单的版本。
+    这个是传递string参数的接口。
+    cmd可以是一个普通的简单字符串。
+    也可以是一个合法的json字符串。
+    如果是json字符串。那么就构造传递。
+    如果是普通字符串（里面没有大括号），那么就当成只有method的notification来构造。
 */
-int jrpc_client_send_cmd_only_name(struct jrpc_client* client, char* cmd)
+int jrpc_client_send_cmd_str(struct jrpc_client* client, char* cmd)
 {
     mylogd("");
-    cJSON* root = cJSON_CreateObject();
-    cJSON* method_json = cJSON_CreateString(cmd);
-    cJSON_AddItemToObject(root, "method", method_json);
-    mylogd("");
-    cJSON* id_json = cJSON_CreateNumber(get_unique_id());
-    cJSON_AddItemToObject(root, "id", id_json);
-    mylogd("");
-    jrpc_client_send_cmd(client, root);
-    mylogd("");
+    cJSON* root = NULL;
+    int ret = -1;
+    //查看cmd里有没有{和}这2个字符。如果有，说明是一个json字符串。
+    if ((strstr(cmd, "{") != NULL) && (strstr(cmd, "}") != NULL)) {
+        // 尝试解析json字符串。
+        root = cJSON_Parse(cmd);
+        if (root == NULL) {
+            myloge("cmd % is not a valid json string", cmd);
+            return -1;
+        }
+    } else {
+        //说明是普通字符串。需要构造一个notification。
+        root = cJSON_CreateObject();
+        cJSON* method_json = cJSON_CreateString(cmd);
+        cJSON_AddItemToObject(root, "method", method_json);
+    }
+    ret = jrpc_client_send_cmd(client, root);
     //自己来销毁cjson
     cJSON_Delete(root);
-    return 0;
+    return ret;
 }

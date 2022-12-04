@@ -9,9 +9,19 @@ pthread_t tid;
 
 void * send_cmd_proc(void *arg)
 {
+    cJSON *root = cJSON_CreateObject();
+    cJSON *id_json = cJSON_CreateNumber(jrpc_client_get_unique_id());
+    cJSON *method_json = cJSON_CreateString("add");
+    int arr[2] = {1,2};
+    cJSON *params_json = cJSON_CreateIntArray(arr, 2);
+    cJSON_AddItemToObject(root, "id", id_json);
+    cJSON_AddItemToObject(root, "method", method_json);
+    cJSON_AddItemToObject(root, "params", params_json);
     while (1) {
-        sleep(2);
-        // jrpc_client_send_cmd_only_name(&my_client, "sayHello");
+        sleep(1);
+        jrpc_client_send_cmd_str(&my_client, "sayHello");
+        sleep(1);
+        jrpc_client_send_cmd(&my_client, root);
     }
 }
 int main(int argc, char const *argv[])
@@ -27,7 +37,7 @@ int main(int argc, char const *argv[])
         myloge("connect to server fail");
         goto fail;
     }
-    pthread_create(&tid, NULL, send_cmd_proc, NULL);
+    // pthread_create(&tid, NULL, send_cmd_proc, NULL);
     mylogd("before run");
     jrpc_client_run(&my_client);
     mylogd("after run");

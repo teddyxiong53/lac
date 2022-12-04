@@ -1,7 +1,7 @@
 #include "jsonrpc_server.h"
 #include "cJSON.h"
 #include "mylog.h"
-
+#include "backtrace_print.h"
 struct jrpc_server my_server;
 
 cJSON *say_hello(jrpc_context *ctx, cJSON *params, cJSON *id)
@@ -35,11 +35,12 @@ pthread_t tid;
 int main(int argc, char const *argv[])
 {
     mylogd("hello");
+    backtrace_print_init();
     jrpc_server_init(&my_server, 1234);
     jrpc_server_register_procedure(&my_server, say_hello, "sayHello", NULL);
     jrpc_server_register_procedure(&my_server, add, "add", NULL);
     jrpc_server_register_procedure(&my_server, exit_server, "exit", NULL);
-    pthread_create(&tid, NULL, broadcast_send, NULL);
+    // pthread_create(&tid, NULL, broadcast_send, NULL);
     jrpc_server_run(&my_server);
     jrpc_server_destroy(&my_server);
     return 0;

@@ -31,7 +31,30 @@ struct jrpc_client {
 int jrpc_client_init(struct jrpc_client* client, char* host, int port);
 int jrpc_client_connect_server(struct jrpc_client *client);
 void jrpc_client_run(struct jrpc_client *client);
+/**
+ * @brief 发送rpc请求。
+ *
+ * @param client
+ * @param cmd 如果里面带有id，那么就是request，没有带id，那就是notification。
+ *              二者的区别的：request要求返回，notification不要求返回结果。
+ * @return int
+ */
 int jrpc_client_send_cmd(struct jrpc_client *client, cJSON *cmd);
-int jrpc_client_send_cmd_only_name(struct jrpc_client *client, char *cmd);
+/**
+ * @brief 参数为字符串的发送函数。
+ *
+ * @param client
+ * @param cmd 可以是一个简单的字符串，也可以是一个json字符串。
+ *              如果是简单字符串，当前一个不带param的notification进行发送。
+ * @return int
+ */
+int jrpc_client_send_cmd_str(struct jrpc_client *client, char *cmd);
+
+/**
+ * @brief 返回一个唯一的id值。调用者用这个来构造一个唯一的id。
+ *
+ * @return int id值。
+ */
+int jrpc_client_get_unique_id();
 
 #endif
