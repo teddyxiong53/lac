@@ -18,7 +18,7 @@ static void close_connection(struct ev_loop *loop, ev_io *w)
     struct jrpc_server *server = w->data;
     // 从server里找到这个conn。把对应的位置清空。
     int i;
-    for (i=0; i<CLIENT_NUM; i++) {
+    for (i=0; i<JRPC_SERVER_CLIENT_NUM; i++) {
         if (conn == server->conns[i]) {
             server->conns[i] = NULL;
             server->conn_count --;
@@ -75,15 +75,18 @@ static int invoke_procedure(struct jrpc_server *server, struct jrpc_connection *
 {
     cJSON *ret = NULL;
     int found = 0;
-    jrpc_context ctx;
+    struct jrpc_context ctx;
     ctx.error_code = 0;
     ctx.error_message = NULL;
     int i;
     for (i=0; i<server->procedure_count; i++) {
-        if (strcmp(server->procedures[i].name, name) == 0) {
+        mylogd("%s == %s", server->procedures[i]->name, name);
+        if (strcmp(server->procedures[i]->name, name) == 0) {
             found = 1;
-            ctx.data = server->procedures[i].data;
-            ret = server->procedures[i].function(&ctx, params, id);
+            ctx.data = server->procedures[i]->data;
+            mylogd("");
+            ret = server->procedures[i]->function(&ctx, params, id);
+            mylogd("");
             break;
         }
     }
@@ -102,6 +105,7 @@ static int invoke_procedure(struct jrpc_server *server, struct jrpc_connection *
 
         }
     } else {
+        mylogd("not found the command");
         //没有找到
         return send_error(conn, JRPC_METHOD_NOT_FOUND, strdup("Method not found"), id);
     }
@@ -113,9 +117,10 @@ static int eval_request(struct jrcp_server *server, struct jrpc_connection *conn
 {
     cJSON *method, *params, *id;
     method = cJSON_GetObjectItem(root, "method");
-    if (!(method != NULL) && (method->type == cJSON_String)) {
+
+    if (!((method != NULL) && (method->type == cJSON_String))) {
         // method解析不对，返回错误。
-        myloge("method is not string");
+        myloge("method is not string or method is null");
         goto fail;
     }
     // get params
@@ -268,7 +273,7 @@ static void accept_cb(struct ev_loop *loop, ev_io *w, int revents)
     // 把connection加入到server中进行管理
     // 方便在需要的时候，遍历发送广播给所有的client
     int i;
-    for (i=0; i<CLIENT_NUM; i++) {
+    for (i=0; i<JRPC_SERVER_CLIENT_NUM; i++) {
         if (server->conns[i] == NULL) {
             server->conns[i] = connection_watcher;
             server->conn_count ++;
@@ -276,7 +281,7 @@ static void accept_cb(struct ev_loop *loop, ev_io *w, int revents)
         }
     }
     mylogd("conn count:%d", server->conn_count);
-    if (i >= CLIENT_NUM) {
+    if (i >= JRPC_SERVER_CLIENT_NUM) {
         //说明没有找到空闲的了。
         //也关闭。
         mylogd("all conns is used now");
@@ -359,10 +364,10 @@ int jrpc_server_init_with_ev_loop(struct jrpc_server *server, int port, struct e
     server->port_number = port;
     server->conn_count = 0;
     int i;
-    for (i=0; i<CLIENT_NUM; i++) {
+    for (i=0; i<JRPC_SERVER_CLIENT_NUM; i++) {
         server->conns[i] = NULL;
     }
-
+    server->procedure_count = 0;
     return __jrpc_server_start(server);
 }
 
@@ -372,32 +377,37 @@ int jrpc_server_init(struct jrpc_server *server, int port)
     return jrpc_server_init_with_ev_loop(server, port, loop);
 }
 
-
 int jrpc_server_register_procedure(struct jrpc_server *server,
-    jrpc_function func, char *name, void *data)
+     char *name, jrpc_function func, void *data)
 {
-    int i = server->procedure_count++;
-    if (!server->procedures) {
-        //第一次注册
-        server->procedures = malloc(sizeof(struct jrpc_procedure));
-    } else {
-        struct jrpc_procedure *p = realloc(server->procedures,
-            sizeof(struct jrpc_procedure)*server->procedure_count);
-        if (!p) {
-            myloge("malloc fail");
-            return -1;
+    struct jrpc_procedure *proc = jrpc_procedure_create( name, func, data);
+    if (!proc) {
+        myloge("malloc fail");
+        goto fail;
+    }
+    //找一下当前的procs的空位
+    int i = 0;
+    for (i=0; i<JRPC_SERVER_PROC_NUM; i++) {
+        if (server->procedures[i] == NULL) {
+            server->procedures[i] = proc;
+            break;
         }
-        server->procedures = p;
     }
-    server->procedures[i].name = strdup(name);
-    if (server->procedures[i].name == NULL) {
-        myloge("strdup fail");
-        return -1;
+    if (i >= JRPC_SERVER_PROC_NUM) {
+        myloge("too many proc is registered");
+        goto fail;
     }
-    server->procedures[i].function = func;
-    server->procedures[i].data = data;
+
+    server->procedure_count ++;
+    mylogd("%s cmd register ok, server->procedures[i]->name:%s", name, server->procedures[i]->name);
     return 0;
+fail:
+    if (proc) {
+        free(proc);
+    }
+    return -1;
 }
+
 
 void jrpc_server_run(struct jrpc_server *server)
 {
@@ -409,26 +419,20 @@ void jrpc_server_stop(struct jrpc_server *server)
     ev_break(server->loop, EVBREAK_ALL);
 }
 
-static void jrpc_procedure_destroy(struct jrpc_procedure *procedure)
-{
-    if (procedure->name) {
-        free(procedure->name);
-        procedure->name = NULL;
-    }
-    if (procedure->data) {
-        free(procedure->data);
-        procedure->data = NULL;
-    }
 
-}
-int jrpc_server_destroy(struct jrpc_server *server)
+
+void jrpc_server_destroy(struct jrpc_server *server)
 {
-    //server指针本身这里不管，由上层来决定怎么处理。
+    if (!server) {
+        myloge("server is NULL");
+        return;
+    }
     int i;
     for (i=0; i<server->procedure_count; i++) {
-        jrpc_procedure_destroy(&(server->procedures[i]));
+        jrpc_procedure_destroy(server->procedures[i]);
     }
-    free(server->procedures);
+    //需要释放server指针。
+    free(server);
 }
 
 
@@ -451,7 +455,7 @@ int jrpc_server_broadcast(struct jrpc_server *server, char *key, char *value)
     char *str = cJSON_Print(root);
     mylogd("broadcast string:%s", str);
     cJSON_Delete(root);
-    for (i=0; i<CLIENT_NUM; i++) {
+    for (i=0; i<JRPC_SERVER_CLIENT_NUM; i++) {
         if (server->conns[i] != NULL) {
             mylogd("send to client[%d]", i);
             send(server->conns[i]->fd, str, strlen(str), 0);
@@ -459,4 +463,30 @@ int jrpc_server_broadcast(struct jrpc_server *server, char *key, char *value)
     }
     free(str);
     return 0;
+}
+
+struct jrpc_server *jrpc_server_create(struct ev_loop *loop, int port)
+{
+    struct jrpc_server * server = malloc(sizeof(*server));
+    int ret = -1;
+    if (!server) {
+        myloge("malloc fail");
+        goto fail;
+    }
+    // 看loop是否是null，如果是，使用default loop
+    if (loop == NULL) {
+        ret = jrpc_server_init(server, port);
+    } else {
+        ret = jrpc_server_init_with_ev_loop(server, port, loop);
+    }
+    if (ret < 0) {
+        myloge("server init fail");
+        goto fail;
+    }
+    return server;
+fail:
+    if (server) {
+        free(server);
+    }
+    return NULL;
 }

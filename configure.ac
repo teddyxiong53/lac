@@ -39,6 +39,7 @@ AC_CONFIG_FILES([
 	tinyutils/Makefile
 	tinythpool/Makefile
 	event_handler/Makefile
+	app/Makefile
     demo/Makefile
 	test/Makefile
 	])

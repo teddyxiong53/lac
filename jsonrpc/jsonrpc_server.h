@@ -2,7 +2,7 @@
 #define _JSONRPC_SERVER_H_
 #include "ev.h"
 #include "cJSON.h"
-
+#include "jsonrpc_procedure.h"
 
 #define JRPC_PARSE_ERROR -32700
 #define JRPC_INVALID_REQUEST -32600
@@ -11,28 +11,20 @@
 #define JRPC_INTERNAL_ERROR -32693
 
 // 最多允许多少个client连接上来。
-#define CLIENT_NUM 3
+#define JRPC_SERVER_CLIENT_NUM 3
+// 最多可以注册20条命令进来，根据需要增加。
+#define JRPC_SERVER_PROC_NUM 20
 
-typedef struct jrpc_context {
-    void *data;
-    int error_code;
-    char *error_message;
-} jrpc_context;
-
-typedef cJSON * (*jrpc_function)(jrpc_context *context, cJSON *params, cJSON *id);
-struct jrpc_procedure {
-    char *name;
-    jrpc_function function;
-    void *data;
-};
-
+/**
+ * @brief 代表了一个跟client的连接。
+ *
+ */
 struct jrpc_connection {
     struct ev_io io;
     int fd;
     int pos;
     unsigned int buffer_size;
     char *buffer;
-
 };
 
 struct jrpc_server {
@@ -40,17 +32,19 @@ struct jrpc_server {
     struct ev_loop *loop;
     ev_io listen_watcher;
     int procedure_count;
-    struct jrpc_procedure *procedures;
-    struct jrpc_connection *conns[CLIENT_NUM];
+    struct jrpc_procedure *procedures[JRPC_SERVER_PROC_NUM];
+    struct jrpc_connection *conns[JRPC_SERVER_CLIENT_NUM];
     int conn_count;
 };
 
 
+struct jrpc_server *jrpc_server_create(struct ev_loop *loop, int port);
 
-int jrpc_server_init(struct jrpc_server *server, int port);
-int jrpc_server_init_with_ev_loop(struct jrpc_server *server, int port, struct ev_loop *loop);
+//init接口不再对外公开。
+//int jrpc_server_init(struct jrpc_server *server, int port);
+//int jrpc_server_init_with_ev_loop(struct jrpc_server *server, int port, struct ev_loop *loop);
 int jrpc_server_register_procedure(struct jrpc_server *server,
-    jrpc_function func, char *name, void *data);
+    char *name, jrpc_function func,  void *data);
 
 /**
  * @brief 给所有连接的client发送广播消息。
@@ -65,6 +59,6 @@ int jrpc_server_broadcast(struct jrpc_server *server, char *key, char *value);
 void jrpc_server_run(struct jrpc_server *server);
 void jrpc_server_stop(struct jrpc_server *server);
 
-int jrpc_server_destroy(struct jrpc_server *server);
+void jrpc_server_destroy(struct jrpc_server *server);
 
 #endif

@@ -20,7 +20,7 @@ static int setnonblock(int fd)
     return fcntl(fd, F_SETFL, flags);
 }
 
-int jrpc_client_init(struct jrpc_client* client, char* host, int port)
+static int jrpc_client_init(struct jrpc_client* client, char* host, int port)
 {
     client->sockfd = -1;
     client->server_ip = strdup(host);
@@ -40,9 +40,30 @@ int jrpc_client_init(struct jrpc_client* client, char* host, int port)
     client->loop = ev_default_loop(0);
     return 0;
 fail:
-    jrpc_client_destroy(client);
     return -1;
 }
+
+struct jrpc_client* jrpc_client_create(char* host, int port)
+{
+    struct jrpc_client *client = malloc(sizeof(*client));
+    if (!client) {
+        myloge("malloc fail");
+        goto fail;
+    }
+    int ret = jrpc_client_init(client, host, port);
+    if (ret < 0) {
+        mylogd("jrpc_client_init fail");
+        goto fail;
+    }
+    return client;
+fail:
+    if (client) {
+        free(client);
+    }
+    return NULL;
+}
+
+
 
 static void process_recv_msg(struct jrpc_client* client)
 {
@@ -56,6 +77,7 @@ static void process_recv_msg(struct jrpc_client* client)
     // 清空recv buf
     memset(client->recv_buf, 0, strlen(client->recv_buf));
 }
+
 static void send_cb(struct ev_loop* loop, ev_io* w, int revents)
 {
     mylogd("revents:0x%x", revents);
@@ -165,6 +187,9 @@ fail:
 
 void jrpc_client_destroy(struct jrpc_client* client)
 {
+    if (!client) {
+        return;
+    }
     if (client->server_ip) {
         free(client->server_ip);
         client->server_ip = NULL;
@@ -177,7 +202,9 @@ void jrpc_client_destroy(struct jrpc_client* client)
         free(client->recv_buf);
         client->recv_buf = NULL;
     }
+    free(client);
 }
+
 void jrpc_client_run(struct jrpc_client* client)
 {
     ev_run(client->loop, 0);
@@ -202,7 +229,7 @@ void jrpc_client_stop(struct jrpc_client* client)
 */
 int jrpc_client_send_cmd(struct jrpc_client* client, cJSON* cmd)
 {
-    mylogd("");
+
     int ret = -1;
     //把cmd print成json字符串，拷贝给send_buf。
     char* str = cJSON_Print(cmd);
@@ -239,7 +266,7 @@ int jrpc_client_get_unique_id()
 */
 int jrpc_client_send_cmd_str(struct jrpc_client* client, char* cmd)
 {
-    mylogd("");
+
     cJSON* root = NULL;
     int ret = -1;
     //查看cmd里有没有{和}这2个字符。如果有，说明是一个json字符串。
