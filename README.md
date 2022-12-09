@@ -87,7 +87,7 @@ test/
 | libev           | √        | 描述：这个就是libev的代码，我只选择了其中epoll的实现（poll和select都不要）。config.h也自己手动修改的。 |
 | tinyev          | ~        | 描述：这个是对libev进行实现，我不喜欢libev大量使用宏的方式，所以自己对libev进行简化，但是这个一时半会儿写不完，而且libev是我的系统里重要的基础库，所以也不想冒险去替换，以免带来各种奇怪难查的问题。 |
 | tinyutils       | x        | 描述：一些基础的工具函数，例如file_util、str_util等等。有需要的时候再一个个加进来。 |
-| sqlite_util     | x        | 描述：对sqlite进行封装。得到更简单易用的接口。               |
+| tinyds          | x        | 描述：ds表示data structure，这个目录放一些基础的通用数据结构。例如双向链表。 |
 | include/mylog.h | √        | 描述：一个简单到不能再简单的log函数。只有十几行代码，一秒钟就能看懂实现。提供了mylogd/mylogi/mylogw/myloge这4个接口。分别对应debug、info、warning、error 4个级别的打印。<br/>打印举例：<br/>`[DEBUG][jsonrpc_server.c][connection_cb][197]: read len:26`<br/>还是我的一贯原则：简单实用。 |
 | 网络库          |          |                                                              |
 | http_server     | x        | 描述：实现http server的功能。基于libev。                     |

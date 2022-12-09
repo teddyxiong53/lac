@@ -4,7 +4,8 @@ bin_PROGRAMS = test-libev  test-tinyparam test-jsonrpc-server \
 	test-thpool test-libev-async \
 	test-libev-3-basic-event test-libev-child test-libev-stat \
 	test-libev-periodic test-libev-cleanup test-libev-prepare-check \
-	test-event-handler
+	test-event-handler \
+	test-dl-list
 
 
 AM_CFLAGS = \
@@ -15,6 +16,7 @@ AM_CFLAGS = \
 	-I$(top_srcdir)/jsonrpc \
 	-I$(top_srcdir)/tinythpool \
 	-I$(top_srcdir)/event_handler \
+	-I$(top_srcdir)/tinyds \
 	-I$(top_srcdir)/include
 
 AM_CFLAGS += -g -O0 -rdynamic -funwind-tables
