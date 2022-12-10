@@ -1,0 +1,22 @@
+{
+    "base": {
+        "pid_file": "/var/run/snapserver/pid",
+        "data_dir": "/var/lib/snapserver"
+    },
+    "http": {
+        "enabled": "0",
+        "port": "1780"
+    },
+    "tcp": {
+        "enabled": "1",
+        "port": "1705"
+    },
+    "stream": {
+        "port": "1704",
+        "codec": "pcm",
+        "buffer_ms": "1000",
+        "sample_format": "48000:16:2",
+        "stream_chunk_ms": "20",
+        "send_audio_to_muted_clients": "false"
+    }
+}

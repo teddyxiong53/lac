@@ -7,7 +7,8 @@ bin_PROGRAMS = test-libev  test-tinyparam test-jsonrpc-server \
 	test-event-handler \
 	test-dl-list \
 	test-libevent-hello \
-	test-lua
+	test-lua \
+	test-lua-as-config
 
 
 AM_CFLAGS = \
