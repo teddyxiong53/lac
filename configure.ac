@@ -38,6 +38,7 @@ AC_CONFIG_FILES([
 	tinyparam/Makefile
 	jsonrpc/Makefile
 	micropython/Makefile
+	lua/Makefile
 	tinyutils/Makefile
 	tinythpool/Makefile
 	event_handler/Makefile
