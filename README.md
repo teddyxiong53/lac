@@ -85,6 +85,7 @@ test/
 | tinythpool      | √        | 描述：一个简单的C语言线程池。<br/>动机：有些异步的操作需求。 |
 | event_handler   | ~        | 描述：可以给各个模块单独使用的异步事件处理。跟tinythpool的区别是，这个是各个模块专用的。可以方便各个模块自己控制。<br/>基本功能有了。代码还需要完善。 |
 | libev           | √        | 描述：这个就是libev的代码，我只选择了其中epoll的实现（poll和select都不要）。config.h也自己手动修改的。 |
+| libevent        | √        | 描述：把libevent的代码提取出来。加入到我的编译系统里来。编译得到libevent.so。 |
 | tinyev          | ~        | 描述：这个是对libev进行实现，我不喜欢libev大量使用宏的方式，所以自己对libev进行简化，但是这个一时半会儿写不完，而且libev是我的系统里重要的基础库，所以也不想冒险去替换，以免带来各种奇怪难查的问题。 |
 | tinyutils       | x        | 描述：一些基础的工具函数，例如file_util、str_util等等。有需要的时候再一个个加进来。 |
 | tinyds          | x        | 描述：ds表示data structure，这个目录放一些基础的通用数据结构。例如双向链表。 |
@@ -103,8 +104,6 @@ test/
 | lua             | x        | 描述：就是lua官方仓库，因为这个官方版本就足够精简了。这个全部集成进来，自己写编译代码。 |
 
 更多功能，慢慢补齐，争取形成一套完整的方案。就像openwrt里的ubus、lua web那一套机制。
-
-更多功能，根据后续的需要慢慢补齐，争取形成一套完整的方案。
 
 # 构建系统
 
@@ -190,6 +189,7 @@ valgrind的情况是一样的。
 struct xx * xx_create()
 	create语义表示内部需要分配一个xx结构体。
 	逻辑上，跟 void xx_destroy(struct xx *x) 进行配对使用。
+	跟create和destroy在语义上对等的，可以是new/free（libevent就是用的这一套）。
 int xx_init(struct xx *x)
 	init表示对一个已经存在的对象进行初始化，传递的参数x指针，可能是一个静态的变量。也可以是malloc的内存。
 	逻辑上没有配对的函数。
@@ -266,7 +266,7 @@ if (!file_uitl_exists("1.txt")) {//文件存在
 
 因为`!file_uitl_exists`从直觉上，是说这个文件不存在。
 
-所以布尔布尔语义是有非常有必要引入的。
+所以布尔语义是非常有必要引入的。
 
 为了使用布尔语义，需要引入：
 

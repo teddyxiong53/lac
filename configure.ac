@@ -34,6 +34,7 @@ AC_CONFIG_FILES([
 	cjson/Makefile
 	tinyipc/Makefile
     libev/Makefile
+	libevent/Makefile
 	tinyparam/Makefile
 	jsonrpc/Makefile
 	tinyutils/Makefile
