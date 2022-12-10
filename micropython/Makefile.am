@@ -1,0 +1,198 @@
+bin_PROGRAMS = micropython
+
+micropython_DEPENDENCIES = $(lib_LTLIBRARIES)
+
+micropython_SOURCES = \
+py/argcheck.c \
+py/asmbase.c \
+py/asmx64.c \
+py/bc.c \
+py/binary.c \
+py/builtinevex.c \
+py/builtinhelp.c \
+py/builtinimport.c \
+py/compile.c \
+py/emitbc.c \
+py/emitcommon.c \
+py/emitglue.c \
+py/emitinlinethumb.c \
+py/emitinlinextensa.c \
+py/emitnarm.c \
+py/emitnative.c \
+py/emitnthumb.c \
+py/emitnx64.c \
+py/emitnx86.c \
+py/emitnxtensa.c \
+py/emitnxtensawin.c \
+py/formatfloat.c \
+py/frozenmod.c \
+py/gc.c \
+py/lexer.c \
+py/malloc.c \
+py/map.c \
+py/modarray.c \
+py/modbuiltins.c \
+py/modcmath.c \
+py/modcollections.c \
+py/modgc.c \
+py/modio.c \
+py/modmath.c \
+py/modmicropython.c \
+py/modstruct.c \
+py/modsys.c \
+py/modthread.c \
+py/moduerrno.c \
+py/mpprint.c \
+py/mpstate.c \
+py/mpz.c \
+py/nativeglue.c \
+py/nlraarch64.c \
+py/nlr.c \
+py/nlrpowerpc.c \
+py/nlrsetjmp.c \
+py/nlrthumb.c \
+py/nlrx64.c \
+py/nlrx86.c \
+py/nlrxtensa.c \
+py/objarray.c \
+py/objattrtuple.c \
+py/objbool.c \
+py/objboundmeth.c \
+py/obj.c \
+py/objcell.c \
+py/objclosure.c \
+py/objcomplex.c \
+py/objdeque.c \
+py/objdict.c \
+py/objenumerate.c \
+py/objexcept.c \
+py/objfilter.c \
+py/objfloat.c \
+py/objfun.c \
+py/objgenerator.c \
+py/objgetitemiter.c \
+py/objint.c \
+py/objint_longlong.c \
+py/objint_mpz.c \
+py/objlist.c \
+py/objmap.c \
+py/objmodule.c \
+py/objnamedtuple.c \
+py/objnone.c \
+py/objobject.c \
+py/objpolyiter.c \
+py/objproperty.c \
+py/objrange.c \
+py/objreversed.c \
+py/objset.c \
+py/objsingleton.c \
+py/objslice.c \
+py/objstr.c \
+py/objstringio.c \
+py/objstrunicode.c \
+py/objtuple.c \
+py/objtype.c \
+py/objzip.c \
+py/opmethods.c \
+py/pairheap.c \
+py/parse.c \
+py/parsenumbase.c \
+py/parsenum.c \
+py/persistentcode.c \
+py/profile.c \
+py/pystack.c \
+py/qstr.c \
+py/reader.c \
+py/repl.c \
+py/ringbuf.c \
+py/runtime.c \
+py/runtime_utils.c \
+py/scheduler.c \
+py/scope.c \
+py/sequence.c \
+py/showbc.c \
+py/smallint.c \
+py/stackctrl.c \
+py/stream.c \
+py/unicode.c \
+py/vm.c \
+py/vstr.c \
+py/warning.c \
+extmod/machine_bitstream.c \
+extmod/machine_mem.c \
+extmod/machine_signal.c \
+extmod/modbtree.c \
+extmod/modframebuf.c \
+extmod/modlwip.c \
+extmod/modnetwork.c \
+extmod/modonewire.c \
+extmod/moduasyncio.c \
+extmod/modubinascii.c \
+extmod/moducryptolib.c \
+extmod/moductypes.c \
+extmod/moduhashlib.c \
+extmod/moduheapq.c \
+extmod/modujson.c \
+extmod/moduos.c \
+extmod/moduplatform.c \
+extmod/modurandom.c \
+extmod/modure.c \
+extmod/moduselect.c \
+extmod/modusocket.c \
+extmod/modussl_axtls.c \
+extmod/modussl_mbedtls.c \
+extmod/modutimeq.c \
+extmod/moduwebsocket.c \
+extmod/moduzlib.c \
+extmod/modwebrepl.c \
+extmod/mpbthci.c \
+extmod/network_cyw43.c \
+extmod/network_ninaw10.c \
+extmod/network_wiznet5k.c \
+extmod/uos_dupterm.c \
+extmod/utime_mphal.c \
+extmod/vfs.c \
+extmod/vfs_posix.c \
+extmod/vfs_posix_file.c \
+extmod/vfs_reader.c \
+extmod/virtpin.c \
+unix/alloc.c                  \
+unix/coverage.c               \
+unix/gccollect.c              \
+unix/input.c                  \
+unix/main.c                   \
+unix/modffi.c                 \
+unix/modjni.c                 \
+unix/modmachine.c             \
+unix/modtermios.c             \
+unix/modtime.c                \
+unix/moduos.c                 \
+unix/moduselect.c             \
+unix/modusocket.c             \
+unix/mpthreadport.c           \
+unix/unix_mphal.c   \
+shared/runtime/gchelper_generic.c       \
+shared/timeutils/timeutils.c \
+shared/libc/abort_.c \
+shared/libc/printf.c
+
+
+
+
+AM_CFLAGS = \
+	-I$(top_srcdir)/micropython \
+    -I$(top_srcdir)/micropython/unix \
+	-I$(top_srcdir)/include
+
+AM_CFLAGS += -g -O0 -rdynamic -funwind-tables
+
+LDADD = -L$(top_srcdir)/cjson -L$(top_srcdir)/tinyparam \
+	-L$(top_srcdir)/libev \
+	-L$(top_srcdir)/jsonrpc \
+	-L$(top_srcdir)/tinythpool \
+	-L$(top_srcdir)/event_handler \
+	-ljsonrpc \
+	-ltinyparam \
+	-ltinythpool \
+	-leventhandler \
+	-lev -lcjson -lpthread -lm
