@@ -41,6 +41,7 @@ AC_CONFIG_FILES([
 	tinyutils/Makefile
 	tinythpool/Makefile
 	event_handler/Makefile
+	pikapython/Makefile
 	app/Makefile
     demo/Makefile
 	test/Makefile

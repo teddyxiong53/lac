@@ -8,7 +8,8 @@ bin_PROGRAMS = test-libev  test-tinyparam test-jsonrpc-server \
 	test-dl-list \
 	test-libevent-hello \
 	test-lua \
-	test-lua-as-config
+	test-lua-as-config \
+	test-pikapython
 
 
 AM_CFLAGS = \
@@ -22,6 +23,8 @@ AM_CFLAGS = \
 	-I$(top_srcdir)/event_handler \
 	-I$(top_srcdir)/tinyds \
 	-I$(top_srcdir)/lua/lua5.3 \
+	-I$(top_srcdir)/pikapython/pikascript-api \
+    -I$(top_srcdir)/pikapython/pikascript-core \
 	-I$(top_srcdir)/include
 
 AM_CFLAGS += -g -O0 -rdynamic -funwind-tables
@@ -33,8 +36,9 @@ LDADD = -L$(top_srcdir)/cjson -L$(top_srcdir)/tinyparam \
 	-L$(top_srcdir)/tinythpool \
 	-L$(top_srcdir)/event_handler \
 	-L$(top_srcdir)/lua \
+	-L$(top_srcdir)/pikapython \
 	-ljsonrpc \
 	-ltinyparam \
 	-ltinythpool \
 	-leventhandler \
-	-lev -levent -llua -lcjson -lpthread -lm
+	-lev -levent -llua -lpikapython -lcjson -lpthread -lm

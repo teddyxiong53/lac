@@ -27,6 +27,9 @@ stamp-h1
 .vscode/
 **/**/*.lai
 **/.libs/*
+.dirstamp
+
+
 
 # Prerequisites
 *.d
