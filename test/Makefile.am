@@ -11,7 +11,8 @@ bin_PROGRAMS = test-libev  test-tinyparam test-jsonrpc-server \
 	test-lua-as-config \
 	test-elk \
 	test-elk-cmd \
-	test-elk-rpc
+	test-elk-rpc \
+	test-mg-http-server
 
 
 AM_CFLAGS = \
@@ -41,8 +42,9 @@ LDADD = -L$(top_srcdir)/cjson -L$(top_srcdir)/tinyparam \
 	-L$(top_srcdir)/lua \
 	-L$(top_srcdir)/elk \
 	-L$(top_srcdir)/pikapython \
+	-L$(top_srcdir)/mongoose \
 	-ljsonrpc \
 	-ltinyparam \
 	-ltinythpool \
 	-leventhandler \
-	-lev -levent -llua  -lelk -lcjson -lpthread -lm
+	-lev -levent -llua  -lelk -lcjson -lmongoose -lpthread -lm

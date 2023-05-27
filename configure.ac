@@ -43,6 +43,7 @@ AC_CONFIG_FILES([
 	event_handler/Makefile
 	pikapython/Makefile
 	elk/Makefile
+	mongoose/Makefile
 	app/Makefile
     demo/Makefile
 	test/Makefile

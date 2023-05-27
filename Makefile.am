@@ -7,4 +7,5 @@ SUBDIRS = cjson tinyparam libev libevent \
     jsonrpc tinyutils tinythpool event_handler \
     lua \
     elk \
+    mongoose \
     app test
