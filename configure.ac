@@ -42,6 +42,7 @@ AC_CONFIG_FILES([
 	tinythpool/Makefile
 	event_handler/Makefile
 	pikapython/Makefile
+	elk/Makefile
 	app/Makefile
     demo/Makefile
 	test/Makefile
