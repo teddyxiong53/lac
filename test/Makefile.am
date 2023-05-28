@@ -11,7 +11,6 @@ bin_PROGRAMS = test-libev  test-tinyparam test-jsonrpc-server \
 	test-lua-as-config \
 	test-elk \
 	test-elk-cmd \
-	test-elk-rpc \
 	test-mg-http-server
 
 
