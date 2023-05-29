@@ -1,3 +1,14 @@
+test*
+!test*/      # 不忽略以test开头的文件夹
+!test*.*     # 不忽略以test开头且带有后缀名的文件
+
+config.h
+!*/config.h
+
+app/bgservice
+app/cliapp
+app/uiapp
+
 aclocal.m4
 ar-lib
 autom4te.cache/
