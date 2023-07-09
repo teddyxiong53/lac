@@ -1,6 +1,6 @@
 #ifndef __SERVER_SETTINGS_H__
 #define __SERVER_SETTINGS_H__
-#include <stdboo.h>
+#include <stdbool.h>
 
 struct base_setting {
     char *pid_file;

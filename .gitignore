@@ -2,6 +2,10 @@ test*
 !test*/      # 不忽略以test开头的文件夹
 !test*.*     # 不忽略以test开头且带有后缀名的文件
 
+# Xmake cache
+.xmake/
+build/
+
 config.h
 !*/config.h
 

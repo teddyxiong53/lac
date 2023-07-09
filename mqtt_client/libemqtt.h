@@ -101,7 +101,7 @@ uint8_t mqtt_num_rem_len_bytes(const uint8_t* buf);
 /** Parse packet buffer for remaning length value.
  *
  * Given a packet, return remaining length value (in fixed header).
- * 
+ *
  * @param buf Pointer to the packet.
  *
  * @retval remaining length
@@ -114,7 +114,7 @@ uint16_t mqtt_parse_rem_len(const uint8_t* buf);
  *
  * @retval message id
  */
-uint8_t mqtt_parse_msg_id(const uint8_t* buf);
+uint16_t mqtt_parse_msg_id(const uint8_t* buf);
 
 /** Parse a packet buffer for the publish topic.
  *
